@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	 
+    <meta http-equiv = "refresh" content = "3">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Progetto SOD</title>
+    
+    <style>
+	    h1 
+	    {
+	    	text-align: center
+	    }
+	    
+	    h2 
+	    {
+	    	text-align: center
+	    }
+	    
+	    h3.pos 
+	    {
+	     	position: absolute;
+	    	right: 10px;
+	    	top: 10px;
+	    	font-size: 15px;
+	    }
+    </style> 
+</head>
+
+<body>
+
+    <h1>Progetto SOD</h1>
+    <h2>Lettura dati sensori:</h2>
+    
+    <h3 class = "pos">Abrami Fabio <br> Andreozzi Carmen <br> Bonci Stefano <br> Silvestri Lorenzo</h3>
+	<table>
+	<style>
+  	    table 
+            {
+   		border-collapse: separate;
+    		border-spacing: 20px;
+    		margin: 0 auto;
+  	    }
+	</style>
+	  <thead>
+	    <tr>
+	      <th>Time</th>
+	      <th>Temperatura</th>
+	      <th>Pressione</th>
+	      <th>Altitudine</th>
+	      <th>Luminosità</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+		{% for date, time, temp, press, alt, light in zip(date_msg,time_msg, temp_msg, 				press_msg, alt_msg, light_msg) %}
+                <tr>
+                  <td>{{ date }} <br> {{ time }}</td>
+                  <td>{{ temp }} </td>
+                  <td>{{ press }} </td>
+                  <td>{{ alt }} </td>
+                  <td>{{ light }} </td>
+            	 </tr>
+            	{% endfor %}
+	  </tbody>
+	</table>
+
+</body>
+</html>
