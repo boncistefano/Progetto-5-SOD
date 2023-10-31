@@ -47,7 +47,7 @@ Per la creazione di una pagina web tramite python è necessario installare la li
 `python3 pip install flask`
 
 ### Installazione della libreria sqlite3
-Per realizzare un database tramite python è possibile utilizzare la libreria sqlite3 che si installa con il comando:
+Per realizzare un database tramite python è possibile utilizzare la libreria sqlite3 (se non già integrata) che si installa con il comando:
 
 `pip install pysqlite3`
 
