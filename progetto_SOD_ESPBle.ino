@@ -9,13 +9,14 @@
 #include <BH1750.h>
 #include <string.h>
 #include <string>
+#include "doAdjust.h"
 
-#define BMP_SCK  (13)
+#define BMP_SCK (13)
 #define BMP_MISO (12)
 #define BMP_MOSI (11)
-#define BMP_CS   (10)
+#define BMP_CS (10)
 
-#define SEA_PRESSURE_LEVEL 1019.0 //Ancona
+#define SEA_PRESSURE_LEVEL 1015.7  //Ancona
 
 #if CONFIG_FREERTOS_UNICORE
 #define ARDUINO_RUNNING_CORE 0
@@ -34,95 +35,136 @@ Adafruit_BMP280 bmp;
 RTC_PCF8523 rtc;
 BH1750 lightMeter;
 
-// Dichiarazione delle variabili globali 
+// Dichiarazione delle variabili globali
 float temp;
 float light;
 float press;
 float alt;
+bool execAdjust = false;
 
 // Task per aggiornare data e orario tramite comando proveniente da Raspberry
-void TaskTimeReading(void *pvParameters)
-{
-  (void) pvParameters;
+void TaskTimeReading(void *pvParameters) {
+  (void)pvParameters;
 
-  for (;;)
+  TickType_t xLastWakeTime;
+
+  for (;;) 
   {
-    String a = SerialBT.readString(); // Lettura della stringa contenente data e orario tramite Bluetooth 
-    Serial.println(a);
-    int day = (a.substring(0,2)).toInt();
-    int month = (a.substring(3,5)).toInt();
-    int year = 2000+(a.substring(6,8)).toInt();
-    int hour = (a.substring(9,11)).toInt();
-    int minute = (a.substring(12,14)).toInt();
-    int second = (a.substring(15,17)).toInt();
+    xLastWakeTime = xTaskGetTickCount();
 
-    // Aggiornamento dell'RTC con data e orario correnti
-    rtc.adjust(DateTime(year,month,day,hour,minute,second));
-
-    if (day != 0)
+    // Questo if viene eseguito se il settaggio è stato già fatto una prima volta
+    if (execAdjust == true) 
     {
-      vTaskDelete(NULL); // Eliminazione del task dopo il primo settaggio
+      String a = SerialBT.readString();
+      if (!a.isEmpty()) 
+      {
+        doAdjust(rtc, a); // Questa funzione viene richiamata per sincronizzare data e ora
+      }
     }
+
+    // Questo blocco di codice viene eseguito se si tratta del primo settaggio dell'orario dall'avvio
+    else {
+      String a = SerialBT.readString();
+      if (a.isEmpty()) 
+      {
+        SerialBT.print("Ho bisogno dell'orario"); // Viene inviata una richiesta alla RPi
+        unsigned long startTime = millis();
+        while (a.isEmpty() && millis() - startTime < 10000) {
+          a = SerialBT.readString();
+        }
+      }
+      if (!a.isEmpty()) {
+
+        doAdjust(rtc, a);
+        execAdjust = true;
+
+        // Creazione degli altri task
+        
+        xTaskCreate(TaskBMPReading,
+                    "BMP Reading",
+                    4000,
+                    NULL,
+                    3,
+                    &taskHandler);
+
+
+        xTaskCreate(TaskBHReading,
+                    "BH Reading",
+                    4000,
+                    NULL,
+                    2,
+                    &taskHandler);
+
+        xTaskCreate(TaskSensorSending,
+                    "Sensor Sending",
+                    4000,
+                    NULL,
+                    1,
+                    &taskHandler);
+      }
+    }
+    vTaskDelayUntil(&xLastWakeTime, 100);
   }
 }
 
-
-
 // Task per la lettura dei dati provenienti dal sensore BMP280 (temperatura, pressione e altitudine)
-void TaskBMPReading(void *pvParameters)
-{
-  (void) pvParameters;
+void TaskBMPReading(void *pvParameters) {
+  (void)pvParameters;
 
-  for (;;)
+  TickType_t xLastWakeTime;
+
+  for (;;) 
   {
-  temp = bmp.readTemperature();
-  press = bmp.readPressure();
-  alt = bmp.readAltitude(SEA_PRESSURE_LEVEL);
-  Serial.print("La temperatura è: ");
-  Serial.println(temp);
-  Serial.print("La pressione è: ");
-  Serial.println(press);
-  Serial.print("L'altitudine è: ");
-  Serial.println(alt);
-  vTaskDelay(3000 / portTICK_PERIOD_MS);
+    xLastWakeTime = xTaskGetTickCount();
+    temp = bmp.readTemperature();
+    press = bmp.readPressure();
+    alt = bmp.readAltitude(SEA_PRESSURE_LEVEL);
+    Serial.print("La temperatura è: ");
+    Serial.println(temp);
+    Serial.print("La pressione è: ");
+    Serial.println(press);
+    Serial.print("L'altitudine è: ");
+    Serial.println(alt);
+    vTaskDelayUntil(&xLastWakeTime, 3000);
   }
 }
 
 // Task per la lettura dei dati provenienti dal sensore BH1750 (luminosità)
-void TaskBHReading(void *pvParameters)
-{
-  (void) pvParameters;
+void TaskBHReading(void *pvParameters) {
+  (void)pvParameters;
 
-  for (;;)
+  TickType_t xLastWakeTime;
+
+  for (;;) 
   {
-  light = lightMeter.readLightLevel();
-  Serial.print("La luminosità è: ");
-  Serial.println(light);
-  vTaskDelay(3000 / portTICK_PERIOD_MS);
+    xLastWakeTime = xTaskGetTickCount();
+    light = lightMeter.readLightLevel();
+    Serial.print("La luminosità è: ");
+    Serial.println(light);
+    vTaskDelayUntil(&xLastWakeTime, 3000);
   }
-
 }
 
 // Task per l'invio dei datti letti (sotto forma di stringa) alla Raspberry Pi tramite bluetooth
-void TaskSensorSending(void *pvParameters)
-{
+void TaskSensorSending(void *pvParameters) {
 
-  for (;;)
+  for (;;) 
   {
     DateTime now = rtc.now();
-    
-    SerialBT.print(String(((int)(now.day())))+"/"+String(((int)(now.month())))+"/"
-                  +String(((int)(now.year())))+";"+String(((int)(now.hour())))+":"
-                  +String(((int)(now.minute())))+":"+String(((int)(now.second())))+";"
-                  +String(temp)+ " *C"+ ";"+String(press)+" Pa"+";"+String(alt)+" m"+";"
-                  +String(light)+" lx");
+    TickType_t xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
 
-    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    SerialBT.print(String(((int)(now.day()))) + "/" + String(((int)(now.month()))) + "/"
+                   + String(((int)(now.year()))) + ";" + String(((int)(now.hour()))) + ":"
+                   + String(((int)(now.minute()))) + ":" + String(((int)(now.second()))) + ";"
+                   + String(temp) + " *C" + ";" + String(press) + " Pa" + ";" + String(alt) + " m" + ";"
+                   + String(light) + " lx");
+
+    vTaskDelayUntil(&xLastWakeTime, 3000);
   }
 }
 
-void setup() 
-{
+void setup() {
   Serial.begin(115200);
   Serial.println("\n---Start---");
   SerialBT.begin("ESP32test");
@@ -130,10 +172,10 @@ void setup()
   unsigned status;
   status = bmp.begin();
 
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,    
-                  Adafruit_BMP280::SAMPLING_X2,     
-                  Adafruit_BMP280::SAMPLING_X16,    
-                  Adafruit_BMP280::FILTER_X16,      
+  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
+                  Adafruit_BMP280::SAMPLING_X2,
+                  Adafruit_BMP280::SAMPLING_X16,
+                  Adafruit_BMP280::FILTER_X16,
                   Adafruit_BMP280::STANDBY_MS_500);
 
   if (!rtc.begin()) 
@@ -152,39 +194,14 @@ void setup()
   Wire.begin();
   lightMeter.begin();
 
-  // Creazione dei task 
-  xTaskCreate(TaskTimeReading, // Funzione relativa al task
-             "Time Reading", // Nome del task
-             2048, // Stack size
-             NULL,// *pvParameters 
-             4, // Priorità
-             &taskHandler); // Task handler
-
- xTaskCreate(TaskBMPReading, 
-              "BMP Reading", 
-              2048, 
-              NULL,  
-              3, 
-              &taskHandler); 
-
-
- xTaskCreate(TaskBHReading, 
-              "BH Reading",
-              2048, 
-              NULL,  
-              2, 
-              &taskHandler);
-
-  xTaskCreate(TaskSensorSending, 
-             "Sensor Sending", 
-             2048, 
-             NULL,
-             1, 
-             &taskHandler); 
-
+  // Creazione dei task
+  xTaskCreate(TaskTimeReading,  // Funzione relativa al task
+              "Time Reading",   // Nome del task
+              4000,             // Stack size
+              NULL,             // *pvParameters
+              4,                // Priorità
+              &taskHandler);    // Task handler
 }
 
 void loop() {
 }
-
-
