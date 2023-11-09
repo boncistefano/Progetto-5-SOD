@@ -4,7 +4,7 @@
 ### Configurazione dell'ESP32 su ArduinoIDE
    * Inserire all’interno del menu Preferenze nella voce 'Additional Board manager' il seguente link di configurazione dell’ESP32: https://dl.espressif.com/dl/package_esp32_index.json
      ![Menù preferenze](img/Menu_preferenze.png)
-     ![Menù preferenze](img/finestra url.png)
+     ![Finestra Url](img/finestra_url.png)
    * Installare tutti i pacchetti relativi all’ESP3 all’interno dell’IDE di Arduino. Per far questo `e necessario, dalla schermata principale del software, andare sotto la     voce Tools, selezionare Board: "ESP32-WROOM-DA Module" e infine andare all’interno di Board Manager.
    * Selezionare la dicitura Board Manager all’interno della quale si dovrà ricercare ESP32 e installare il pacchetto corrispondente.
    * Una volta installato l’ambiente è necessario configurare la scheda per poter eseguire gli sketch realizzati. Per fare questo è necessario, all’intero della scheda Tools, selezionare la board che si sta effettivamente utilizzando. La board utilizzata in questo progetto è l’ESP32-WROOM-DA Module.
