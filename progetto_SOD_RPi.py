@@ -1,6 +1,7 @@
 from bluetooth import *
 import paho.mqtt.client as mqtt
 from datetime import datetime
+import schedule, time 
 
 # IP e porta relativi al broker MQTT
 broker_ip = "192.168.1.25" 
@@ -15,24 +16,20 @@ client.loop_start()
 
 # Invio della data e dell'orario all'ESP32
 def send_time():
-    
-    now = datetime.now()
-    current_time = now.strftime("%d/%m/%y %H:%M:%S")
+    current_time = int(time.time())
     print(current_time)
-    sock.send(current_time)
-    
-# Ricezione tramite bluetooth delle misurazione dall'ESP32        
+    sock.send(str(current_time))
+            
 def receive_data():
-    
-    while True:
-        data = sock.recv(2048)
-        if data:
-            data = data.decode()
-            print(data)
-            
-            # Pubblicazione del topic da parte del client MQTT
-            client.publish(publish_topic, str(data), 1) 
-            
+    data = sock.recv(2048)
+    data = data.decode()
+    if data=="Ho bisogno dell'orario":
+    	send_time()
+    else:            
+        #Pubblicazione del topic da parte del client MQTT
+    	client.publish(publish_topic, str(data), 1) 
+    print(data)
+        
 #MAC address dell'ESP32
 addr = "08:3A:8D:2F:29:DA"
 service_matches = find_service(address = addr)
@@ -56,7 +53,10 @@ sock.connect((host, port))
 
 print("Connected")
 
-send_time()
-receive_data()
+schedule.every(2).minutes.do(send_time)
 
-sock.close()
+if __name__ == '__main__':
+	while True:
+		schedule.run_pending()
+		receive_data()
+
