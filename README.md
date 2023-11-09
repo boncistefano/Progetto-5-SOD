@@ -6,9 +6,13 @@
      ![Menù preferenze](img/Menu_preferenze.png)
      ![Finestra Url](img/finestra_url.png)
    * Installare tutti i pacchetti relativi all’ESP3 all’interno dell’IDE di Arduino. Per far questo `e necessario, dalla schermata principale del software, andare sotto la     voce Tools, selezionare Board: "ESP32-WROOM-DA Module" e infine andare all’interno di Board Manager.
+     ![Tools](img/tools.png)
    * Selezionare la dicitura Board Manager all’interno della quale si dovrà ricercare ESP32 e installare il pacchetto corrispondente.
+     ![esp32 board manager](img/esp32_board_manager.png)
    * Una volta installato l’ambiente è necessario configurare la scheda per poter eseguire gli sketch realizzati. Per fare questo è necessario, all’intero della scheda Tools, selezionare la board che si sta effettivamente utilizzando. La board utilizzata in questo progetto è l’ESP32-WROOM-DA Module.
+     ![Configurazione esp32](img/impostare_esp32.png)
    * Come ultima cosa è necessario settare la porta COM alla quale la scheda ESP32 è collegata sul computer. Per far questo, sempre sotto il menu Tools, è necessario selezionare la voce COM e impostare la porta desiderata.
+     ![Configurazione porta](img/Configurazione_porta.png)
 ### Installazione Librerie per l'ESP32 tramite ArduinoIDE
 Per poter utilizzare i sensori tramite ESP32 è necessario installare le seguenti librerie:
   * RTClib
