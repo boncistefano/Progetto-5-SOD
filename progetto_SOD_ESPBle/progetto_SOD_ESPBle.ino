@@ -84,7 +84,7 @@ void TaskTimeReading(void *pvParameters) {
                     "BMP Reading",
                     4000,
                     NULL,
-                    3,
+                    1,
                     &taskHandler);
 
 
@@ -99,7 +99,7 @@ void TaskTimeReading(void *pvParameters) {
                     "Sensor Sending",
                     4000,
                     NULL,
-                    1,
+                    3,
                     &taskHandler);
       }
     }
